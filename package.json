@@ -28,7 +28,21 @@
     "watch": "rollup -wc",
     "test": "npm run lint",
     "lint": "standard && tsc",
-    "preversion": "npm run clean && npm run lint && npm run dist && npm run types"
+    "preversion": "npm run clean && npm run lint && npm run dist && npm run types",
+    "docker:local:build": "docker compose -f docker-compose.yml build",
+    "docker:local:up": "docker compose -f docker-compose.yml up -d",
+    "docker:local:down": "docker compose -f docker-compose.yml down",
+    "docker:build": "docker compose -f docker-compose.cloudflare.yml build",
+    "docker:up": "docker compose -f docker-compose.cloudflare.yml up -d",
+    "docker:down": "docker compose -f docker-compose.cloudflare.yml down",
+    "docker:logs": "docker compose -f docker-compose.cloudflare.yml logs -f",
+    "docker:ps": "docker compose -f docker-compose.cloudflare.yml ps",
+    "docker:restart": "docker compose -f docker-compose.cloudflare.yml restart",
+    "docker:clean": "docker compose -f docker-compose.cloudflare.yml down -v --rmi all",
+    "tunnel:setup": "chmod +x ./scripts/run_ywebrtc_cloudflare_tunnel.sh",
+    "tunnel:start": "bash -c 'source ./.env && ./scripts/run_ywebrtc_cloudflare_tunnel.sh \"${CLOUDFLARE_API_KEY}\" \"${HOST_DOMAIN}\"'",
+    "tunnel:start:manual": "bash -c './scripts/run_ywebrtc_cloudflare_tunnel.sh \"$npm_config_apikey\" \"$npm_config_domain\"'",
+    "deploy:full": "npm run docker:up && npm run tunnel:setup && npm run tunnel:start"
   },
   "bin": {
     "y-webrtc-signaling": "./bin/server.js"

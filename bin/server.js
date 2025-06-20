@@ -12,11 +12,50 @@ const wsReadyStateClosed = 3 // eslint-disable-line
 const pingTimeout = 30000
 
 const port = process.env.PORT || 4444
-const wss = new WebSocketServer({ noServer: true })
+const allowedOrigins = process.env.API_ORIGINS ? process.env.API_ORIGINS.split(',') : []
 
 const server = http.createServer((request, response) => {
+  // Handle CORS for HTTP requests
+  const origin = request.headers.origin
+
+  if (allowedOrigins.includes('*')) {
+    response.setHeader('Access-Control-Allow-Origin', '*')
+  } else if (origin && allowedOrigins.includes(origin)) {
+    response.setHeader('Access-Control-Allow-Origin', origin)
+  }
+
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  if (request.method === 'OPTIONS') {
+    response.writeHead(200)
+    response.end()
+    return
+  }
+
   response.writeHead(200, { 'Content-Type': 'text/plain' })
-  response.end('okay')
+  response.end('Y-WebRTC Signaling Server is running')
+})
+
+const wss = new WebSocketServer({
+  noServer: true,
+  // Handle CORS for WebSocket connections
+  verifyClient: (info) => {
+    const origin = info.origin
+
+    // If no origins specified, allow all
+    if (allowedOrigins.length === 0) {
+      return true
+    }
+
+    // Allow all origins if '*' is specified
+    if (allowedOrigins.includes('*')) {
+      return true
+    }
+
+    // Check if origin is in allowed list
+    return origin && allowedOrigins.includes(origin)
+  }
 })
 
 /**
@@ -124,7 +163,17 @@ const onconnection = conn => {
 wss.on('connection', onconnection)
 
 server.on('upgrade', (request, socket, head) => {
-  // You may check auth of request here..
+  // Additional CORS check for WebSocket upgrade
+  const origin = request.headers.origin
+
+  if (allowedOrigins.length > 0 && !allowedOrigins.includes('*')) {
+    if (!origin || !allowedOrigins.includes(origin)) {
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+      socket.destroy()
+      return
+    }
+  }
+
   /**
    * @param {any} ws
    */
@@ -136,4 +185,9 @@ server.on('upgrade', (request, socket, head) => {
 
 server.listen(port)
 
-console.log('Signaling server running on localhost:', port)
+console.log('Y-WebRTC Signaling server running on localhost:', port)
+if (allowedOrigins.length > 0) {
+  console.log('Allowed origins:', allowedOrigins.join(', '))
+} else {
+  console.log('CORS: All origins allowed (no API_ORIGINS specified)')
+}

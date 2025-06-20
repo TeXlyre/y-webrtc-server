@@ -45,6 +45,91 @@ const provider = new WebrtcProvider('your-room-name', ydoc, { signaling: ['wss:/
 
 There is also an interesting article about setting up a scalable "serverless" signaling server by Ronny Roeller: https://medium.com/collaborne-engineering/serverless-yjs-72d0a84326a2
 
+### Deployment with Cloudflare Tunnel
+
+You can deploy the Y-WebRTC signaling server using Cloudflare Tunnel for easy hosting without port forwarding or complex network configuration.
+
+#### Prerequisites
+
+1. A Cloudflare account with your domain added
+2. Cloudflare Global API token
+3. Docker and Docker Compose installed
+
+#### Setup
+
+1. **Get your Cloudflare API token**: Go to Cloudflare dashboard → My Profile → API Tokens → Global API Key
+
+2. **Configure environment**: Copy the `envfile` to `.env` and fill in your details:
+   ```bash
+   cp envfile .env
+   # Edit .env with your values
+   ```
+
+3. **Build and deploy**:
+   ```bash
+   npm run docker:build
+   npm run deploy:full
+   ```
+
+4. **Manual deployment** (if you prefer):
+   ```bash
+   # Build the Docker image
+   npm run docker:build
+   
+   # Start the signaling server
+   npm run docker:up
+   
+   # Set up and start Cloudflare tunnel
+   npm run tunnel:setup
+   npm run tunnel:start
+   ```
+
+#### Usage
+
+Once deployed, your signaling server will be available at `wss://your-domain.com`. You can use it in your Y.js applications:
+
+```js
+import { WebrtcProvider } from 'y-webrtc'
+
+const provider = new WebrtcProvider('your-room-name', ydoc, {
+  signaling: ['wss://your-domain.com']
+})
+```
+
+#### CORS Configuration
+
+The signaling server supports CORS configuration through the `API_ORIGINS` environment variable:
+
+```bash
+# Allow specific origins
+API_ORIGINS=https://myapp.com,https://myapp.dev,https://localhost:3000
+
+# Allow all origins (not recommended for production)
+API_ORIGINS=*
+
+# No CORS restrictions (if not specified)
+# API_ORIGINS=
+```
+
+**Important**: Always specify the exact origins that should be allowed to connect to your signaling server in production environments for security.
+
+#### Environment Variables
+
+Create a `.env` file based on `envfile`:
+
+- `HOST_DOMAIN`: Your domain/subdomain for the signaling server
+- `CLOUDFLARE_API_KEY`: Your Cloudflare Global API token
+- `API_ORIGINS`: Comma-separated list of allowed origins for CORS
+- `NODE_ENV`: Environment (production/development)
+
+#### Manual Tunnel Setup
+
+If you need to set up the tunnel manually:
+
+```bash
+./scripts/run_ywebrtc_cloudflare_tunnel.sh "your-api-key" "your-domain.com"
+```
+
 ### Communication Restrictions
 
 y-webrtc is restricted by the number of peers that the web browser can create. By default, every client is connected to every other client up until the maximum number of conns is reached. The clients will still sync if every client is connected at least indirectly to every other client. Theoretically, y-webrtc allows an unlimited number of users, but at some point it can't be guaranteed anymore that the clients sync any longer**. Because we don't want to be greedy,

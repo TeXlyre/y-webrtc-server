@@ -1,0 +1,16 @@
+services:
+  y-webrtc-signaling:
+    build: .
+    image: yjs/y-webrtc:latest
+    ports:
+      - 4444:4444
+    environment:
+      - PORT=4444
+      - NODE_ENV=development
+      - API_ORIGINS=http://localhost:3000,http://localhost:8080
+    networks:
+      - y-webrtc
+
+networks:
+  y-webrtc:
+    driver: bridge
